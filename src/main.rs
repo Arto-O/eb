@@ -92,7 +92,7 @@ pub struct Args {
     recurse: bool,
 
     /// Recurse into directories as a tree
-    #[arg(short = 'T', long, help_heading = DIR_LIST_FORMAT_HEADING)]
+    #[arg(short = 'T', long, overrides_with = "grid", help_heading = DIR_LIST_FORMAT_HEADING)]
     tree: bool,
 
     /// Sort the grid across
