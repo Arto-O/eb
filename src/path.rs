@@ -1,4 +1,4 @@
-use std::{fs::metadata};
+use std::fs::metadata;
 
 use crate::{
     Args,
