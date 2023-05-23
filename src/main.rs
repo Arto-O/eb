@@ -8,8 +8,19 @@ use clap::{
     },
 };
 
+pub mod list;
+pub mod print;
+
+mod path;
+
 fn main() {
-    let _args = Args::parse();
+    let args = Args::parse();
+
+    match args.paths.len() {
+        0 => list::list_dir_contents(-1, &args),
+        1 => path::handle_path(0, &args),
+        _ => path::handle_paths(&args),
+    }
 }
 
 // help message headings
@@ -23,7 +34,7 @@ const FILE_PRINT_HEADING: &str = "File Printing Options";
 /// Intuitively list directory contents or concatenate files.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about)]
-struct Args {
+pub struct Args {
     /// Directory(s) and/or File(s) to list / print / concatenate. No arguments lists out current directory
     #[arg(trailing_var_arg = true, num_args = 1.., value_name = "FILES", allow_hyphen_values = true)]
     paths: Vec<String>,
