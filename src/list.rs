@@ -1,16 +1,18 @@
-use std::fs::{
-    read_dir,
-    ReadDir,
-};
+use std::fs::read_dir;
 use term_grid::{
+    Alignment,
     Grid,
     GridOptions,
     Direction,
     Filling,
     Cell,
 };
+use term_size;
 
-use crate::Args;
+use crate::{
+    Args,
+    sort,
+};
 
 pub fn list_dir_contents(path_index: isize, args: &Args) {
     let path;
@@ -19,11 +21,17 @@ pub fn list_dir_contents(path_index: isize, args: &Args) {
     } else {
         path = &args.paths[path_index as usize];
     }
-    let rd = read_dir(path).unwrap();
+
+    let mut files = Vec::new();
+    for r in read_dir(path).unwrap() {
+        files.push(r.unwrap());
+    }
+
+    sort::sort_files(&mut files, args);
 
     let mut items = Vec::new();
-    for de in rd {
-        let item = de.unwrap().file_name().into_string().unwrap();
+    for file in files {
+        let item = file.file_name().into_string().unwrap();
 
         if !args.all && &item[0..1] == "." {
             continue;
@@ -40,7 +48,29 @@ pub fn list_dir_contents(path_index: isize, args: &Args) {
 } 
 
 fn list_in_grid(items: Vec<String>) {
-    println!("list_in_grid");
+    let mut grid = Grid::new(GridOptions {
+        filling: Filling::Spaces(2),
+        direction: Direction::TopToBottom,
+    });
+
+    for item in &items {
+        grid.add(Cell {
+            width: item.len(),
+            contents: item.to_string(),
+            alignment: Alignment::Left,
+        });
+    }
+
+    let term_width = match term_size::dimensions() {
+        Some((w, _)) => w,
+        None => panic!("Couldn't determine terminal width."),
+    };
+
+    if let Some(display) = grid.fit_into_width(term_width) {
+        println!("{}", display);
+    } else {
+        list_one_per_line(items);
+    }
 }
 
 fn list_one_per_line(items: Vec<String>) {

@@ -10,6 +10,7 @@ use clap::{
 
 pub mod list;
 pub mod print;
+pub mod sort;
 
 mod path;
 
