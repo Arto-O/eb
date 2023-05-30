@@ -15,12 +15,14 @@ pub mod sort;
 mod path;
 
 fn main() {
+    // get command line arguments
     let args = Args::parse();
 
+    // decide what to do depending on the number of paths
     match args.paths.len() {
-        0 => list::list_dir_contents(-1, &args),
-        1 => path::handle_path(0, &args),
-        _ => path::handle_paths(&args),
+        0 => list::list_dir_contents(-1, &args),    // list current directory
+        1 => path::handle_path(0, &args),           // list or print
+        _ => path::handle_paths(&args),                         // list or print each path
     }
 }
 

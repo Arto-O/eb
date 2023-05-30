@@ -15,6 +15,7 @@ use crate::{
 };
 
 pub fn list_dir_contents(path_index: isize, args: &Args) {
+    // list current directory if no path was provided
     let path;
     if path_index < 0 {
         path = ".";
@@ -22,6 +23,7 @@ pub fn list_dir_contents(path_index: isize, args: &Args) {
         path = &args.paths[path_index as usize];
     }
 
+    // get files
     let mut files = Vec::new();
     for r in read_dir(path).unwrap() {
         files.push(r.unwrap());
@@ -29,6 +31,7 @@ pub fn list_dir_contents(path_index: isize, args: &Args) {
 
     sort::sort_files(&mut files, args);
 
+    // get file names
     let mut items = Vec::new();
     for file in files {
         let item = file.file_name().into_string().unwrap();
