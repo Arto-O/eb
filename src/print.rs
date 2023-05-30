@@ -5,8 +5,11 @@ use std::{
         BufRead,
     },
 };
+use term_size;
 
 use crate::Args;
+
+const TAB_LENGTH: usize = 8;
 
 pub fn print_file(path_index: usize, args: &Args) {
     let file = File::open(&args.paths[path_index]).unwrap();
@@ -28,8 +31,22 @@ pub fn print_file(path_index: usize, args: &Args) {
         for _ in (i + 1).to_string().len()..line_num_length {
             print!(" ");
         }
+        print!("{}", i + 1);
 
-        println!("{}\t{}", i + 1, lines[i]);
+        // max line length = terminal width - tab length
+        let max_line_len = match term_size::dimensions() {
+            Some((w, _)) => w - TAB_LENGTH,
+            None => panic!("Couldn't determine terminal width."),
+        };
+
+        let mut line = lines[i].clone();
+
+        // cut and print the line until it's shorter than max line length
+        while line.len() > max_line_len {
+            println!("\t{}", &line[0..max_line_len]);
+            line = line[max_line_len..].to_string();
+        }
+        println!("\t{}", line);
     }
     println!();
 }
