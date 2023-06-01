@@ -10,10 +10,7 @@ pub fn handle_path(path_index: usize, args: &Args) {
     // get file metadata
     let md = match metadata(&args.paths[path_index]) {
         Ok(x) => x,
-        Err(e) => {
-            println!("{}", e);
-            return;
-        },
+        Err(e) => panic!("Failed to retrieve metadata: {}", e),
     };
 
     if md.is_dir() {
