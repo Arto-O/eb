@@ -25,7 +25,6 @@ pub fn print_file(path_index: usize, args: &Args) {
     // count the amount to pad line numbers by
     let line_num_length = line_count.to_string().len();
 
-    println!();
     for i in 0..lines.len() {
         // print padding for line number
         for _ in (i + 1).to_string().len()..line_num_length {
