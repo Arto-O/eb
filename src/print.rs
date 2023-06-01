@@ -26,11 +26,7 @@ pub fn print_file(path_index: usize, args: &Args) {
     let line_num_length = line_count.to_string().len();
 
     for i in 0..lines.len() {
-        // print padding for line number
-        for _ in (i + 1).to_string().len()..line_num_length {
-            print!(" ");
-        }
-        print!("{}", i + 1);
+        print!("{:line_num_length$}", i + 1);
 
         // max line length = terminal width - tab length
         let max_line_len = match term_size::dimensions() {
