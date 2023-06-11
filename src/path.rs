@@ -1,10 +1,6 @@
 use std::fs::metadata;
 
-use crate::{
-    Args,
-    list,
-    print,
-};
+use crate::{ Args, list, print };
 
 pub fn handle_path(path_index: usize, args: &Args) {
     // get file metadata

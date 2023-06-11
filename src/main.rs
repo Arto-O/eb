@@ -1,11 +1,7 @@
 use std::ops::Range;
 use clap::{
     Parser,
-    builder::{
-        PossibleValuesParser,
-        TypedValueParser,
-        NonEmptyStringValueParser,
-    },
+    builder::{ PossibleValuesParser, TypedValueParser, NonEmptyStringValueParser },
 };
 
 pub mod list;
@@ -16,7 +12,11 @@ mod path;
 
 fn main() {
     // get command line arguments
-    let args = Args::parse();
+    let mut args = Args::parse();
+
+    if !args.modified && !args.no_time && !args.changed && !args.accessed && !args.created {
+        args.modified = true;
+    }
 
     // decide what to do depending on the number of paths
     match args.paths.len() {

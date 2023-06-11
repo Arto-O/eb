@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 bitvec = "1.0.1"
+chrono = "0.4.26"
 clap = { version = "4.3.0", features = ["derive"] }
 term_grid = "0.2"
 term_size = "0.3.2"
