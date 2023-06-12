@@ -40,5 +40,4 @@ pub fn print_file(path_index: usize, args: &Args) {
         }
         println!("\t{}", line);
     }
-    println!();
 }

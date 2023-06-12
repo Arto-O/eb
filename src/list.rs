@@ -74,7 +74,7 @@ fn list_in_grid(items: Vec<String>, margin: usize) {
     };
 
     if let Some(display) = grid.fit_into_width(term_width) {
-        println!("{}", display);
+        print!("{}", display);
     } else {
         list_one_per_line(items);
     }
