@@ -19,14 +19,7 @@ const BINARY_PREFIX: char = 'i';
 const DIRECTORY_SIZE: &str = "-";
 const TIME_FORMAT: &str = "%d %b %H:%M";
 
-pub fn list_dir_contents(path_index: isize, args: &Args) {
-    // list current directory if no path was provided
-    let path = if path_index < 0 {
-        "."
-    } else {
-        &args.paths[path_index as usize]
-    };
-
+pub fn list_dir_contents(path: &str, args: &Args) {
     // get files
     let mut files = Vec::new();
     for r in read_dir(path).unwrap() {
@@ -36,7 +29,7 @@ pub fn list_dir_contents(path_index: isize, args: &Args) {
     sort::sort_files(&mut files, args);
 
     if args.long {
-        let items = get_long_form_items(files, args);
+        let items = get_long_form_items(&files, args);
 
         if args.grid {
             list_in_grid(items, 4);
@@ -44,12 +37,30 @@ pub fn list_dir_contents(path_index: isize, args: &Args) {
             list_one_per_line(items);
         }
     } else {
-        let items = get_short_form_items(files, args);
+        let items = get_short_form_items(&files, args);
 
         if args.oneline {
             list_one_per_line(items);
         } else {
             list_in_grid(items, 2);
+        }
+    }
+
+    if args.recurse {
+        for file in files {
+            let md = match file.metadata() {
+                Ok(x) => x,
+                Err(e) => panic!("Failed to retrieve metadata: {}", e),
+            };
+
+            if md.is_dir() {
+                let new_path = format!("{}/{}", path,
+                    file.file_name().into_string().unwrap());
+
+                println!("\n{}:", new_path);
+
+                list_dir_contents(&new_path, args);
+            }
         }
     }
 }
@@ -86,7 +97,7 @@ fn list_one_per_line(items: Vec<String>) {
     }
 }
 
-fn get_short_form_items(files: Vec<DirEntry>, args: &Args) -> Vec<String> {
+fn get_short_form_items(files: &Vec<DirEntry>, args: &Args) -> Vec<String> {
     let mut items = Vec::new();
 
     for file in files {
@@ -103,7 +114,7 @@ fn get_short_form_items(files: Vec<DirEntry>, args: &Args) -> Vec<String> {
     items
 }
 
-fn get_long_form_items(files: Vec<DirEntry>, args: &Args) -> Vec<String> {
+fn get_long_form_items(files: &Vec<DirEntry>, args: &Args) -> Vec<String> {
     let mut items = Vec::new();
 
     // get widths for some columns
@@ -115,7 +126,7 @@ fn get_long_form_items(files: Vec<DirEntry>, args: &Args) -> Vec<String> {
     let mut changeds = HashMap::with_capacity(files.len());
     let mut createds = HashMap::with_capacity(files.len());
     let mut accesseds = HashMap::with_capacity(files.len());
-    for file in &files {
+    for file in files {
         let md = match file.metadata() {
             Ok(x) => x,
             Err(e) => panic!("Failed to retrieve metadata: {}", e),

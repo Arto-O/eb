@@ -8,8 +8,8 @@ use crate::Args;
 
 const TAB_LENGTH: usize = 8;
 
-pub fn print_file(path_index: usize, args: &Args) {
-    let file = File::open(&args.paths[path_index]).unwrap();
+pub fn print_file(path: &str, _args: &Args) {
+    let file = File::open(path).unwrap();
 
     // get all the lines and count them
     let mut line_count = 0;
