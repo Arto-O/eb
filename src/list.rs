@@ -114,6 +114,7 @@ fn get_long_form_items(files: Vec<DirEntry>, args: &Args) -> Vec<String> {
     let mut modifieds = HashMap::with_capacity(files.len());
     let mut changeds = HashMap::with_capacity(files.len());
     let mut createds = HashMap::with_capacity(files.len());
+    let mut accesseds = HashMap::with_capacity(files.len());
     for file in &files {
         let md = match file.metadata() {
             Ok(x) => x,
@@ -221,6 +222,18 @@ fn get_long_form_items(files: Vec<DirEntry>, args: &Args) -> Vec<String> {
 
                 createds.insert(file.file_name().into_string().unwrap(), time_str);
             }
+
+            if args.accessed {
+                let dt: DateTime<Local> = match md.accessed() {
+                    Ok(st) => st.into(),
+                    Err(e) => panic!("Failed to retrieve file timestamp: {}", e),
+                };
+                let time_str = dt.format(TIME_FORMAT).to_string();
+
+                update_width(&mut widths, "accessed", time_str.len());
+
+                accesseds.insert(file.file_name().into_string().unwrap(), time_str);
+            }
         }
     }
 
@@ -309,6 +322,11 @@ fn get_long_form_items(files: Vec<DirEntry>, args: &Args) -> Vec<String> {
             if args.created {
                 push_pad_str(&mut item_str, &createds.get(&name).unwrap(),
                     *widths.get("created").unwrap());
+            }
+
+            if args.accessed {
+                push_pad_str(&mut item_str, &accesseds.get(&name).unwrap(),
+                    *widths.get("accessed").unwrap());
             }
         }
 
