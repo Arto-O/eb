@@ -18,7 +18,7 @@ fn main() {
         args.modified = true;
     }
 
-    if args.list_dirs {
+    if args.list_dirs && !args.recurse {
         list::list_dirs(&args);
     } else {
         // decide what to do depending on the number of paths
