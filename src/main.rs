@@ -1,8 +1,8 @@
-use std::ops::Range;
 use clap::{
+    builder::{ NonEmptyStringValueParser, PossibleValuesParser, TypedValueParser },
     Parser,
-    builder::{ PossibleValuesParser, TypedValueParser, NonEmptyStringValueParser },
 };
+use std::ops::Range;
 
 pub mod list;
 pub mod print;
@@ -18,11 +18,15 @@ fn main() {
         args.modified = true;
     }
 
-    // decide what to do depending on the number of paths
-    match args.paths.len() {
-        0 => path::handle_path(-1, &args),              // list current directory
-        1 => path::handle_path(0, &args),   // list or print
-        _ => path::handle_paths(&args),                 // list or print each path
+    if args.list_dirs {
+        list::list_dirs(&args);
+    } else {
+        // decide what to do depending on the number of paths
+        match args.paths.len() {
+            0 => path::handle_path(-1, &args),              // list current directory
+            1 => path::handle_path(0, &args),   // list or print
+            _ => path::handle_paths(&args),                 // list or print each path
+        }
     }
 }
 

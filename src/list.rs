@@ -1,23 +1,53 @@
-use std::{
-    fs::{ DirEntry, read_dir },
-    os::{ unix::fs::{ PermissionsExt, MetadataExt } },
-    collections::HashMap,
-    time::{ SystemTime, Duration },
-};
-use term_grid::{ Alignment, Grid, GridOptions, Direction, Filling, Cell };
-use term_size;
 use bitvec::prelude::*;
-use chrono::{ offset::Local, DateTime};
+use chrono::{ DateTime, offset::Local };
+use std::{
+    collections::HashMap,
+    fs::{ DirEntry, metadata, read_dir },
+    os::{ unix::fs::{ MetadataExt, PermissionsExt } },
+    time::{ Duration, SystemTime },
+};
+use term_grid::{ Alignment, Cell, Direction, Filling, Grid, GridOptions };
+use term_size;
 
 use crate::{ Args, sort };
 
-// Chars for permissions in long form listing
 const PERM_CHARS: [char; 3] = ['r', 'w', 'x'];
 const NO_PERM: char = '-';
 const PREFIXES: [char; 6] = ['k', 'M', 'G', 'T', 'P', 'E'];
 const BINARY_PREFIX: char = 'i';
 const DIRECTORY_SIZE: &str = "-";
 const TIME_FORMAT: &str = "%d %b %H:%M";
+const GRID_MARGIN: usize = 2;
+const LONG_GRID_MARGIN: usize = 4;
+
+pub fn list_dirs(args: &Args) {
+    let paths = match args.paths.len() {
+        0 => {
+            vec![String::from(".")]      
+        },
+        _ => {
+            args.paths.clone()
+        }
+    };
+
+    if args.long {
+        let items = get_long_form_items(&paths, args);
+
+        if args.grid {
+            list_in_grid(items, LONG_GRID_MARGIN, args);
+        } else {
+            list_one_per_line(items);
+        }
+    } else {
+        let items = get_short_form_items(&paths);
+
+        if args.oneline {
+            list_one_per_line(items);
+        } else {
+            list_in_grid(items, GRID_MARGIN, args);
+        }
+    }
+}
 
 pub fn list_dir_contents(path: &str, args: &Args) {
     // get files
@@ -29,20 +59,20 @@ pub fn list_dir_contents(path: &str, args: &Args) {
     sort::sort_files(&mut files, args);
 
     if args.long {
-        let items = get_long_form_items(&files, args);
+        let items = get_long_form_items(&get_file_paths(&files, args), args);
 
         if args.grid {
-            list_in_grid(items, 4, args);
+            list_in_grid(items, LONG_GRID_MARGIN, args);
         } else {
             list_one_per_line(items);
         }
     } else {
-        let items = get_short_form_items(&files, args);
+        let items = get_short_form_items(&get_file_paths(&files, args));
 
         if args.oneline {
             list_one_per_line(items);
         } else {
-            list_in_grid(items, 2, args);
+            list_in_grid(items, GRID_MARGIN, args);
         }
     }
 
@@ -71,7 +101,6 @@ fn list_in_grid(items: Vec<String>, margin: usize, args: &Args) {
     } else {
         Direction::TopToBottom
     };
-
     let mut grid = Grid::new(GridOptions {
         filling: Filling::Spaces(margin),
         direction,
@@ -103,37 +132,45 @@ fn list_one_per_line(items: Vec<String>) {
     }
 }
 
-fn get_short_form_items(files: &Vec<DirEntry>, args: &Args) -> Vec<String> {
-    let mut items = Vec::new();
-
+fn get_file_paths(files: &Vec<DirEntry>, args: &Args) -> Vec<String> {
+    let mut paths = Vec::with_capacity(files.len());
     for file in files {
-        let item = file.file_name().into_string().unwrap();
+        let path = file.file_name().into_string().unwrap();
 
         // check if hidden file
-        if &item[0..1] == "." && !args.all {
+        if &path[0..1] == "." && !args.all {
             continue;
         }
 
-        items.push(item);
+        paths.push(file.file_name().into_string().unwrap());
+    }
+    paths
+}
+
+fn get_short_form_items(paths: &Vec<String>) -> Vec<String> {
+    let mut items = Vec::new();
+
+    for path in paths {
+        items.push(path.clone());
     }
 
     items
 }
 
-fn get_long_form_items(files: &Vec<DirEntry>, args: &Args) -> Vec<String> {
+fn get_long_form_items(paths: &Vec<String>, args: &Args) -> Vec<String> {
     let mut items = Vec::new();
 
     // get widths for some columns
     let mut widths = HashMap::new();
 
     // also cache file sizes and times
-    let mut sizes = HashMap::with_capacity(files.len());
-    let mut modifieds = HashMap::with_capacity(files.len());
-    let mut changeds = HashMap::with_capacity(files.len());
-    let mut createds = HashMap::with_capacity(files.len());
-    let mut accesseds = HashMap::with_capacity(files.len());
-    for file in files {
-        let md = match file.metadata() {
+    let mut sizes = HashMap::with_capacity(paths.len());
+    let mut modifieds = HashMap::with_capacity(paths.len());
+    let mut changeds = HashMap::with_capacity(paths.len());
+    let mut createds = HashMap::with_capacity(paths.len());
+    let mut accesseds = HashMap::with_capacity(paths.len());
+    for path in paths {
+        let md = match metadata(path) {
             Ok(x) => x,
             Err(e) => panic!("Failed to retrieve metadata: {}", e),
         };
@@ -190,7 +227,7 @@ fn get_long_form_items(files: &Vec<DirEntry>, args: &Args) -> Vec<String> {
 
             update_width(&mut widths, "size", size_str.len());
 
-            sizes.insert(file.file_name().into_string().unwrap(), size_str);
+            sizes.insert(path, size_str);
         }
 
         if args.blocks {
@@ -215,7 +252,7 @@ fn get_long_form_items(files: &Vec<DirEntry>, args: &Args) -> Vec<String> {
 
                 update_width(&mut widths, "modified", time_str.len());
 
-                modifieds.insert(file.file_name().into_string().unwrap(), time_str);
+                modifieds.insert(path, time_str);
             }
             
             if args.changed {
@@ -225,7 +262,7 @@ fn get_long_form_items(files: &Vec<DirEntry>, args: &Args) -> Vec<String> {
 
                 update_width(&mut widths, "changed", time_str.len());
 
-                changeds.insert(file.file_name().into_string().unwrap(), time_str);
+                changeds.insert(path, time_str);
             }
 
             if args.created {
@@ -237,7 +274,7 @@ fn get_long_form_items(files: &Vec<DirEntry>, args: &Args) -> Vec<String> {
 
                 update_width(&mut widths, "created", time_str.len());
 
-                createds.insert(file.file_name().into_string().unwrap(), time_str);
+                createds.insert(path, time_str);
             }
 
             if args.accessed {
@@ -249,20 +286,13 @@ fn get_long_form_items(files: &Vec<DirEntry>, args: &Args) -> Vec<String> {
 
                 update_width(&mut widths, "accessed", time_str.len());
 
-                accesseds.insert(file.file_name().into_string().unwrap(), time_str);
+                accesseds.insert(path, time_str);
             }
         }
     }
 
-    for file in files {
-        let name = file.file_name().into_string().unwrap();
-
-        // check if hidden file
-        if &name[0..1] == "." && !args.all {
-            continue;
-        }
-
-        let md = match file.metadata() {
+    for path in paths {
+        let md = match metadata(path) {
             Ok(x) => x,
             Err(e) => panic!("Failed to retrieve metadata: {}", e),
         };
@@ -302,7 +332,7 @@ fn get_long_form_items(files: &Vec<DirEntry>, args: &Args) -> Vec<String> {
         }
 
         if !args.no_filesize {
-            push_pad_str(&mut item_str, &sizes.get(&name).unwrap(),
+            push_pad_str(&mut item_str, &sizes.get(&path).unwrap(),
                 *widths.get("size").unwrap());
         }
 
@@ -327,27 +357,27 @@ fn get_long_form_items(files: &Vec<DirEntry>, args: &Args) -> Vec<String> {
 
         if !args.no_time {
             if args.modified {
-                push_pad_str(&mut item_str, &modifieds.get(&name).unwrap(),
+                push_pad_str(&mut item_str, &modifieds.get(&path).unwrap(),
                     *widths.get("modified").unwrap());
             }
 
             if args.changed {
-                push_pad_str(&mut item_str, &changeds.get(&name).unwrap(),
+                push_pad_str(&mut item_str, &changeds.get(&path).unwrap(),
                     *widths.get("changed").unwrap());
             }
 
             if args.created {
-                push_pad_str(&mut item_str, &createds.get(&name).unwrap(),
+                push_pad_str(&mut item_str, &createds.get(&path).unwrap(),
                     *widths.get("created").unwrap());
             }
 
             if args.accessed {
-                push_pad_str(&mut item_str, &accesseds.get(&name).unwrap(),
+                push_pad_str(&mut item_str, &accesseds.get(&path).unwrap(),
                     *widths.get("accessed").unwrap());
             }
         }
 
-        items.push(item_str + &name);
+        items.push(item_str + &path);
     }
 
     items
