@@ -32,7 +32,7 @@ pub fn list_dir_contents(path: &str, args: &Args) {
         let items = get_long_form_items(&files, args);
 
         if args.grid {
-            list_in_grid(items, 4);
+            list_in_grid(items, 4, args);
         } else {
             list_one_per_line(items);
         }
@@ -42,7 +42,7 @@ pub fn list_dir_contents(path: &str, args: &Args) {
         if args.oneline {
             list_one_per_line(items);
         } else {
-            list_in_grid(items, 2);
+            list_in_grid(items, 2, args);
         }
     }
 
@@ -65,10 +65,16 @@ pub fn list_dir_contents(path: &str, args: &Args) {
     }
 }
 
-fn list_in_grid(items: Vec<String>, margin: usize) {
+fn list_in_grid(items: Vec<String>, margin: usize, args: &Args) {
+    let direction = if args.across {
+        Direction::LeftToRight
+    } else {
+        Direction::TopToBottom
+    };
+
     let mut grid = Grid::new(GridOptions {
         filling: Filling::Spaces(margin),
-        direction: Direction::TopToBottom,
+        direction,
     });
 
     for item in &items {
