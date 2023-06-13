@@ -1,6 +1,6 @@
 use std::{
     fs::File,
-    io::{ BufReader, BufRead },
+    io::{ BufRead, BufReader },
 };
 use term_size;
 
