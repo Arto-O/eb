@@ -59,7 +59,10 @@ pub fn list_dir_contents(path: &str, args: &Args) {
     sort::sort_files(&mut files, args);
 
     if args.long {
-        let items = get_long_form_items(&get_file_paths(&files, args), args);
+        let items = get_long_form_items(
+            &get_file_paths(&files, path, args),
+            args,
+        );
 
         if args.grid {
             list_in_grid(items, LONG_GRID_MARGIN, args);
@@ -67,7 +70,8 @@ pub fn list_dir_contents(path: &str, args: &Args) {
             list_one_per_line(items);
         }
     } else {
-        let items = get_short_form_items(&get_file_paths(&files, args));
+        let items = get_short_form_items(&get_file_paths(&files, path,
+            args));
 
         if args.oneline {
             list_one_per_line(items);
@@ -132,7 +136,7 @@ fn list_one_per_line(items: Vec<String>) {
     }
 }
 
-fn get_file_paths(files: &Vec<DirEntry>, args: &Args) -> Vec<String> {
+fn get_file_paths(files: &Vec<DirEntry>, base: &str, args: &Args) -> Vec<String> {
     let mut paths = Vec::with_capacity(files.len());
     for file in files {
         let path = file.file_name().into_string().unwrap();
@@ -142,7 +146,7 @@ fn get_file_paths(files: &Vec<DirEntry>, args: &Args) -> Vec<String> {
             continue;
         }
 
-        paths.push(file.file_name().into_string().unwrap());
+        paths.push(format!("{}/{}", base, file.file_name().into_string().unwrap()));
     }
     paths
 }
@@ -151,7 +155,7 @@ fn get_short_form_items(paths: &Vec<String>) -> Vec<String> {
     let mut items = Vec::new();
 
     for path in paths {
-        items.push(path.clone());
+        items.push(String::from(path.split('/').last().unwrap()));
     }
 
     items
@@ -377,7 +381,7 @@ fn get_long_form_items(paths: &Vec<String>, args: &Args) -> Vec<String> {
             }
         }
 
-        items.push(item_str + &path);
+        items.push(item_str + path.split('/').last().unwrap());
     }
 
     items
